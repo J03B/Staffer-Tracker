@@ -4,6 +4,7 @@ const inquirer = require('inquirer');
 const cTable = require('console.table');
 const queries = require('./utils/myQueries');
 const { menuQuesitons,viewQuestions,addQuestions,updateQuestions,deleteQuestions} = require('./utils/myQuestions');
+const { addDept, addRole, addEmp } = require('./utils/addRows');
 
 // Connect to the MySQL database with custom user: GitUser
 const db = mysql.createConnection(
@@ -27,7 +28,7 @@ function sendQuery(sqlString) {
 }
 
 // Function to inquire a department and run an input function
-function toggleDepratments() {
+function toggleDepratments(inFunc) {
     db.query(queries.getDepartments(), function (_err, results) {
         let deptId = 0;
         let allDepts = [];
@@ -45,7 +46,7 @@ function toggleDepratments() {
         inquirer.prompt(deptQuestion)
             .then((answers) => {
                 deptId = deptIdsIndex[allDepts.findIndex((val) => val == answers.deptName)];
-                sendQuery(queries.getSalaryByDepartment(deptId));
+                sendQuery(inFunc(deptId));
             });
     });
 }
@@ -73,7 +74,7 @@ function init() {
                     sendQuery(queries.getEmployeesByDepartment());
                     break;
                 case "View a department's utilized budget":
-                    toggleDepratments();
+                    toggleDepratments(queries.getSalaryByDepartment);
                     break;
                 default:
                     break;
@@ -89,10 +90,13 @@ function init() {
         .then((answers) => {
             switch (answers.addData) {
                 case 'Add a Department':
+                    addDept();
                     break;
                 case 'Add a Role':
+                    sendQuery(addRole());
                     break;
                 case 'Add an Employee':
+                    sendQuery(addEmp());
                     break;
                 default:
                     break;
@@ -101,6 +105,7 @@ function init() {
         .catch((error) => {
             console.error(`Error: ${error}`);
         });
+        init();
     }
 
     function updateMenu() {
@@ -125,6 +130,7 @@ function init() {
         .then((answers) => {
             switch (answers.deleteData) {
                 case 'Delete a Department':
+                    toggleDepratments(queries.deleteDepartment);
                     break;
                 case 'Delete a Role':
                     break;

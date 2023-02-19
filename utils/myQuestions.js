@@ -64,7 +64,8 @@ const deleteQuestions = [
     }
 ];
 
-module.exports = { menuQuesitons, 
+module.exports = { 
+    menuQuesitons, 
     viewQuestions, 
     addQuestions, 
     updateQuestions, 
