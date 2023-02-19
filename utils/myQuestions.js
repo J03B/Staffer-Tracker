@@ -8,7 +8,8 @@ const menuQuesitons = [
             'View Data',
             'Add Data',
             'Update Employee Record',
-            'Delete Data'
+            'Delete Data',
+            'Quit'
         ]
     }
 ];
