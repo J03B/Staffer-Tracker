@@ -4,7 +4,6 @@ const inquirer = require('inquirer');
 const cTable = require('console.table');
 const queries = require('./utils/myQueries');
 const { menuQuesitons,viewQuestions,addQuestions,updateQuestions,deleteQuestions} = require('./utils/myQuestions');
-const { addDept, addRole, addEmp } = require('./utils/addRows');
 
 // Connect to the MySQL database with custom user: GitUser
 const db = mysql.createConnection(
@@ -17,14 +16,32 @@ const db = mysql.createConnection(
   console.log(`Connected to the employee_db database.`)
 );
 
+// Validation funcitons for inquirer that responses are not empty
+function notEmpty(response) {
+    if (response !== '') {
+        return true;
+    }
+    return 'Must contain at least one character';
+}
+function isNumber(response) {
+    if (String(response).match(/\d/)) {
+        return true;
+    }
+    return 'Must contain a number';
+}
+
 // Function to handle any query
 function sendQuery(sqlString) {
     db.query(sqlString, function(_err, results, _fields) {
         console.log('\n');
+        if (_err) {
+            console.log("Error - please contact your system administrator:\n" + _err);
+            console.log(_fields);
+        }
         console.table(results);
-        console.log('\n\n\n\n\n');
+        console.log('\n\n');
+        init();
     });
-    init();
 }
 
 // Function to inquire a department and run an input function
@@ -49,6 +66,135 @@ function toggleDepratments(inFunc) {
                 sendQuery(inFunc(deptId));
             });
     });
+}
+
+// ADD DEPARTMENT
+function addDept() {
+    let retStr;
+    inquirer.prompt([
+        {
+            type: 'input',
+            name: 'deptName',
+            message: 'What is the name of the department?',
+            validate: (answer) => notEmpty(answer)
+        }
+    ])
+        .then((answer) => {
+            retStr = queries.addDepartment(answer.deptName);
+            sendQuery(retStr);
+        });
+    return retStr;
+}
+
+// ADD ROLE
+function addRole() {
+    let retStr;
+    db.query(queries.getDepartments(), function (_err, results) {
+        let deptId = 0;
+        let allDepts = [];
+        let deptIdsIndex = [];
+        results.forEach(dept => {
+            allDepts.push(dept.name);
+            deptIdsIndex.push(dept.id);
+        });
+        const deptQuestion = {
+            type: 'list',
+            name: 'roleDept',
+            message: 'In which department is this role?',
+            choices: allDepts
+        };
+        inquirer.prompt([
+            {
+                type: 'input',
+                name: 'roleName',
+                message: `What is the role's title?`,
+                validate: (answer) => notEmpty(answer)
+            },
+            {
+                type: 'number',
+                name: 'roleSalary',
+                message: `What is this role's salary?`,
+                validate: (answer) => isNumber(answer)
+            },
+            deptQuestion
+        ])
+        .then((answers) => {
+            const {roleName, roleSalary, roleDept} = answers;
+            deptId = deptIdsIndex[allDepts.findIndex((val) => val == roleDept)];
+            retStr = queries.addRole(roleName, roleSalary, deptId);
+            sendQuery(retStr);
+        });
+    });
+    return retStr;
+}
+
+// ADD EMPLOYEE
+function addEmp() {
+    let retStr;
+    let roleId = 0;
+    let manId = 0;
+    let allRoles = [];
+    let allEmps = [];
+    let roleIdsIndex = [];
+    let empIdsIndex = [];
+    const empQuestions = [
+        {
+            type: 'input',
+            name: 'firstName',
+            message: `What is the employee's first name?`,
+            validate: (answer) => notEmpty(answer)
+        },
+        {
+            type: 'input',
+            name: 'lastName',
+            message: `What is the employee's last name?`,
+            validate: (answer) => notEmpty(answer)
+        }
+    ]
+    db.query(queries.getRoles(), function (_err, results) {
+        results.forEach(role => {
+            allRoles.push(role.title);
+            roleIdsIndex.push(role.id);
+        });
+        empQuestions.push({
+            type: 'list',
+            name: 'empRole',
+            message: `What is the employe's role?`,
+            choices: allRoles
+        });
+    });
+    db.query(queries.getEmployees(), function (_err, results) {
+        results.forEach(emp => {
+            allEmps.push(`${emp["First Name"]} ${emp["Last Name"]}`);
+            empIdsIndex.push(emp.ID);
+        });
+        empQuestions.push({
+            type: 'list',
+            name: 'empMan',
+            message: `Who is the employe's manager?`,
+            choices: allEmps
+        });
+        inquirer.prompt(empQuestions)
+            .then((answers) => {
+                const { firstName, lastName, empRole, empMan } = answers;
+                roleId = roleIdsIndex[allRoles.findIndex((val) => val == empRole)];
+                manId = empIdsIndex[allEmps.findIndex((val) => val == empMan)];
+                retStr = queries.addEmployee(firstName, lastName, roleId, manId);
+                sendQuery(retStr);
+            });
+    });
+    
+    return retStr;
+}
+
+// UPDATE EMPLOYEE RECORD ROLE
+function updateEmpRole() {
+
+}
+
+// UPDATE EMPLOYEE RECORD MANAGER
+function updateEmpManager() {
+    
 }
 
 // Initialize the application with Inquirer
@@ -93,10 +239,10 @@ function init() {
                     addDept();
                     break;
                 case 'Add a Role':
-                    sendQuery(addRole());
+                    addRole();
                     break;
                 case 'Add an Employee':
-                    sendQuery(addEmp());
+                    addEmp();
                     break;
                 default:
                     break;
@@ -105,7 +251,6 @@ function init() {
         .catch((error) => {
             console.error(`Error: ${error}`);
         });
-        init();
     }
 
     function updateMenu() {
@@ -113,8 +258,10 @@ function init() {
         .then((answers) => {
             switch (answers.updateData) {
                 case 'Update an Employee Role':
+                    updateEmpRole();
                     break;
                 case "Update an Employee's Manager":
+                    updateEmpManager();
                     break;
                 default:
                     break;
