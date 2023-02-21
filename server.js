@@ -30,7 +30,7 @@ function isNumber(response) {
     return 'Must contain a number';
 }
 
-// Function to handle any query
+// Function to handle any query for output
 function sendQuery(sqlString) {
     db.query(sqlString, function(_err, results, _fields) {
         console.log('\n');
@@ -83,7 +83,6 @@ function addDept() {
             retStr = queries.addDepartment(answer.deptName);
             sendQuery(retStr);
         });
-    return retStr;
 }
 
 // ADD ROLE
@@ -125,7 +124,6 @@ function addRole() {
             sendQuery(retStr);
         });
     });
-    return retStr;
 }
 
 // ADD EMPLOYEE
@@ -150,7 +148,8 @@ function addEmp() {
             message: `What is the employee's last name?`,
             validate: (answer) => notEmpty(answer)
         }
-    ]
+    ];
+    // Add currently existing roles to the list of options
     db.query(queries.getRoles(), function (_err, results) {
         results.forEach(role => {
             allRoles.push(role.title);
@@ -159,10 +158,11 @@ function addEmp() {
         empQuestions.push({
             type: 'list',
             name: 'empRole',
-            message: `What is the employe's role?`,
+            message: `What is the employee's role?`,
             choices: allRoles
         });
     });
+    // Add currently existing employees to the list of options
     db.query(queries.getEmployees(), function (_err, results) {
         results.forEach(emp => {
             allEmps.push(`${emp["First Name"]} ${emp["Last Name"]}`);
@@ -171,9 +171,10 @@ function addEmp() {
         empQuestions.push({
             type: 'list',
             name: 'empMan',
-            message: `Who is the employe's manager?`,
+            message: `Who is the employee's manager?`,
             choices: allEmps
         });
+        // Get answers to questions and send it to the SQL query
         inquirer.prompt(empQuestions)
             .then((answers) => {
                 const { firstName, lastName, empRole, empMan } = answers;
@@ -183,18 +184,97 @@ function addEmp() {
                 sendQuery(retStr);
             });
     });
-    
-    return retStr;
 }
 
 // UPDATE EMPLOYEE RECORD ROLE
 function updateEmpRole() {
-
+    let retStr;
+    let allEmps = [];
+    let allRoles = [];
+    let empIdsIndex = [];
+    let roleIdsIndex = [];
+    let empQuestions = [];
+    // Add currently existing employees to the list of options
+    db.query(queries.getEmployees(), function (_err, results) {
+        results.forEach(emp => {
+            allEmps.push(`${emp["First Name"]} ${emp["Last Name"]}`);
+            empIdsIndex.push(emp.ID);
+        });
+        empQuestions.push({
+            type: 'list',
+            name: 'empMan',
+            message: `Which employee's Role would you like to update?`,
+            choices: allEmps
+        });
+    });
+    // Add currently existing roles to the list of options
+    db.query(queries.getRoles(), function (_err, results) {
+        results.forEach(role => {
+            allRoles.push(role.title);
+            roleIdsIndex.push(role.id);
+        });
+        empQuestions.push({
+            type: 'list',
+            name: 'empRole',
+            message: `What is the employee's new role?`,
+            choices: allRoles
+        });
+        // Get answers to questions and send it to the SQL query
+        inquirer.prompt(empQuestions)
+            .then((answers) => {
+                const { empMan, empRole } = answers;
+                const roleId = roleIdsIndex[allRoles.findIndex((val) => val == empRole)];
+                const manId = empIdsIndex[allEmps.findIndex((val) => val == empMan)];
+                retStr = queries.setEmployeeRole(manId, roleId);
+                sendQuery(retStr);
+            });
+    });
 }
 
 // UPDATE EMPLOYEE RECORD MANAGER
 function updateEmpManager() {
-    
+    let retStr;
+    let allEmps = [];
+    let empIdsIndex = [];
+    let empQuestions = [];
+    // Add currently existing employees to the list of options
+    db.query(queries.getEmployees(), function (_err, results) {
+        results.forEach(emp => {
+            allEmps.push(`${emp["First Name"]} ${emp["Last Name"]}`);
+            empIdsIndex.push(emp.ID);
+        });
+        empQuestions.push({
+            type: 'list',
+            name: 'empName',
+            message: `Which employee's Manager would you like to update?`,
+            choices: allEmps
+        });
+        // Get answers to question and create an array without the chosen employee
+        inquirer.prompt(empQuestions)
+            .then((answers) => {
+                const { empName } = answers;
+                const empIdx = allEmps.findIndex((val) => val == empName);
+                const empId = empIdsIndex[empIdx];
+                allEmps.splice(empIdx, empIdx);
+                empIdsIndex.splice(empIdx, empIdx);
+                allEmps.push(`Remove - no manager`);
+                allEmps.push(new inquirer.Separator());
+                empIdsIndex.push("NULL");
+                // Prompt for the next question - the manager
+                inquirer.prompt([{
+                    type: 'list',
+                    name: 'manName',
+                    message: `Who is the manager for ${empName}?`,
+                    choices: allEmps
+                }])
+                    .then((answer) => {
+                        const { manName } = answer;
+                        const manId = empIdsIndex[allEmps.findIndex((val) => val == manName)];
+                        retStr = queries.setEmployeeManager(empId, manId);
+                        sendQuery(retStr);
+                    });
+            });
+    });
 }
 
 // Initialize the application with Inquirer
