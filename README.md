@@ -14,21 +14,24 @@
 
 ## Description
 
-This project does not have a web-based deployment. Instead, this content management system (CMS) is deployed via the command line.
+This project does not have a web-based deployment. Instead, this content management system (CMS) is deployed via the console.
 
-This application is a CMS that utilizing a SQL database to track staff members. It can be used to keep track of and report on member data, as well as providing a simple, easy to use interface for non-developers. This application will use an Express.js back end and will save and retrieve data from the SQL server database. 
+This application is a CMS that utilizing a SQL database to track staff members. It can be used to keep track of and report on member data, as well as providing a simple, easy to use interface for non-developers. This application will use a Node.js back end and Inquirer.js front-end and will save and retrieve data from the SQL server database. 
 
 ### Mock Up
 
-The screenshot below shows the deployed Command Line Interface.
+The screenshot below shows the deployed Command Line Interface, followed by the demo .mp4 which shows it's various levels of functionality.
 [![An example of the deployed tool with a sample output already displayed.](./assets/mockup-demo.png)](./assets/mockup-demo.png)
+
+[![A full video demonstration of the app's numerous levels of functionality.](./assets/staffer-tracker-demo.mp4)](./assets/staffer-tracker-demo.mp4)
+
 
 ### Task Completed
 The task here was to complete a project that would allow the user to keep track of staff member data in a command line user interface. Autonomy is essential to become a proficient developer, and saving time by easily storing SQL data would aid in those efforts. This challenge should set myself up for future success by applying the core skills I've recently learned, meeting certain acceptance criteria with SQL and Server side APIs. The criteria are documented in the Acceptance Criteria section. 
 
 ## Installation
 
-This project is deployed on the command line; a local installation must be used by downloading the repo. The application uses Express to incorperate my own API that I've created. <b>Once installed, the application is started with 'npm start' in the shell. </b>
+This project is deployed on the command line; a local installation must be used by downloading the repo. The application uses MySQL to interact with the data. <b>The first time the repo is downloaded, the application should first be initialized.</b> This can be done with MySQL with the command 'source schema.sql' in the /db/ directory (and can optionally be seeded with seeds.sql in the same folder). <b>Then, the app is started with 'npm start' in the console.</b>
 
 ## Usage
 
@@ -74,6 +77,14 @@ WHEN I choose to update an employee role
 THEN I am prompted to select an employee to update and their new role and this information is updated in the database
 ```
 
+I've also included some bonus features not listed in the acceptance criteria:
+```
+Update employee managers.
+View employees by manager.
+View employees by department.
+Delete departments, roles, and employees.
+View the total utilized budget of a department—in other words, the combined salaries of all employees in that department.
+```
 ## Questions
 
 If you have any questions, reach out to me through either of the methods below:

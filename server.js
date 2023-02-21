@@ -96,6 +96,7 @@ function addRole() {
             allDepts.push(dept.name);
             deptIdsIndex.push(dept.id);
         });
+        // Gather info from questions about the role columns
         const deptQuestion = {
             type: 'list',
             name: 'roleDept',
@@ -117,6 +118,7 @@ function addRole() {
             },
             deptQuestion
         ])
+        // compile the question answers and display in console
         .then((answers) => {
             const {roleName, roleSalary, roleDept} = answers;
             deptId = deptIdsIndex[allDepts.findIndex((val) => val == roleDept)];
@@ -168,6 +170,9 @@ function addEmp() {
             allEmps.push(`${emp["First Name"]} ${emp["Last Name"]}`);
             empIdsIndex.push(emp.ID);
         });
+        allEmps.push(`Remove - no manager`);
+        allEmps.push(new inquirer.Separator());
+        empIdsIndex.push("NULL");
         empQuestions.push({
             type: 'list',
             name: 'empMan',
@@ -277,6 +282,64 @@ function updateEmpManager() {
     });
 }
 
+// DELETE ROLE
+function delRole() {
+    let retStr;
+    let allRoles = [];
+    let roleIdsIndex = [];
+    let empQuestions = [];
+    // Add currently existing roles to the list of options
+    db.query(queries.getRoles(), function (_err, results) {
+        results.forEach(role => {
+            allRoles.push(role.title);
+            roleIdsIndex.push(role.id);
+        });
+        empQuestions.push({
+            type: 'list',
+            name: 'empRole',
+            message: `Which role would you like to delete?`,
+            choices: allRoles
+        });
+        // Get answers to questions and send it to the SQL query
+        inquirer.prompt(empQuestions)
+            .then((answers) => {
+                const { empRole } = answers;
+                const roleId = roleIdsIndex[allRoles.findIndex((val) => val == empRole)];
+                retStr = queries.deleteRole(roleId);
+                sendQuery(retStr);
+            });
+    });
+}
+
+// DELETE INDIVIDUAL EMPLOYEE
+function delEmp() {
+    let retStr;
+    let allEmps = [];
+    let empIdsIndex = [];
+    let empQuestions = [];
+    // Add currently existing employees to the list of options
+    db.query(queries.getEmployees(), function (_err, results) {
+        results.forEach(emp => {
+            allEmps.push(`${emp["First Name"]} ${emp["Last Name"]}`);
+            empIdsIndex.push(emp.ID);
+        });
+        empQuestions.push({
+            type: 'list',
+            name: 'empMan',
+            message: `Which employee would you like to delete?`,
+            choices: allEmps
+        });
+        // Get answers to question and send it to the SQL query
+        inquirer.prompt(empQuestions)
+            .then((answers) => {
+                const { empMan } = answers;
+                const empID = empIdsIndex[allEmps.findIndex((val) => val == empMan)];
+                retStr = queries.deleteEmployee(empID);
+                sendQuery(retStr);
+            });
+    });
+}
+
 // Initialize the application with Inquirer
 function init() {
     // Function to display any VIEW data options
@@ -311,6 +374,7 @@ function init() {
         });
     }
 
+    // Menu for addition of new data
     function addMenu() {
         inquirer.prompt(addQuestions)
         .then((answers) => {
@@ -333,6 +397,7 @@ function init() {
         });
     }
 
+    // Options when going to update Employee records
     function updateMenu() {
         inquirer.prompt(updateQuestions)
         .then((answers) => {
@@ -352,6 +417,7 @@ function init() {
         });
     }
 
+    // Options when going to delete data
     function deleteMenu() {
         inquirer.prompt(deleteQuestions)
         .then((answers) => {
@@ -360,8 +426,10 @@ function init() {
                     toggleDepratments(queries.deleteDepartment);
                     break;
                 case 'Delete a Role':
+                    delRole();
                     break;
                 case 'Delete an Employee':
+                    delEmp();
                     break;
                 default:
                     break;
@@ -372,6 +440,7 @@ function init() {
         });
     }
 
+    // Main menu options
     function main() {
         inquirer.prompt(menuQuesitons)
         .then((answers) => {
@@ -402,4 +471,5 @@ function init() {
     main();
 }
 
+// Run application
 init();
